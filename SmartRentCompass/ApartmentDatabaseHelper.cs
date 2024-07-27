@@ -23,16 +23,15 @@ namespace SmartRentCompass
                 try
                 {
                     connection.Open();
-                    string query = "INSERT INTO Apartments (Name, Address, Rent, Size, Bedrooms, Bathrooms, PetsAllowed) VALUES (@Name, @Address, @Rent, @Size, @Bedrooms, @Bathrooms, @PetsAllowed)";
+                    string query = "INSERT INTO Apartments (Name, Address, Price, Bedrooms, Bathrooms, SquareFeet) VALUES (@Name, @Address, @Price, @Bedrooms, @Bathrooms, @SquareFeet)";
                     using (var command = new MySqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Name", apartment.Name);
                         command.Parameters.AddWithValue("@Address", apartment.Address);
-                        command.Parameters.AddWithValue("@Rent", apartment.Rent);
-                        command.Parameters.AddWithValue("@Size", apartment.Size);
+                        command.Parameters.AddWithValue("@Price", apartment.Rent); // Assuming Rent maps to Price
                         command.Parameters.AddWithValue("@Bedrooms", apartment.Bedrooms);
                         command.Parameters.AddWithValue("@Bathrooms", apartment.Bathrooms);
-                        command.Parameters.AddWithValue("@PetsAllowed", apartment.PetsAllowed);
+                        command.Parameters.AddWithValue("@SquareFeet", apartment.Size); // Assuming Size maps to SquareFeet
                         command.ExecuteNonQuery();
                     }
                 }
@@ -49,117 +48,7 @@ namespace SmartRentCompass
             }
         }
 
-        public void RemoveApartment(int apartmentId)
-        {
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "DELETE FROM Apartments WHERE ApartmentId = @ApartmentId";
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@ApartmentId", apartmentId);
-                        command.ExecuteNonQuery();
-                    }
-                }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-            }
-        }
-
-        public void UpdateApartment(Apartment apartment)
-        {
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "UPDATE Apartments SET Name = @Name, Address = @Address, Rent = @Rent, Size = @Size, Bedrooms = @Bedrooms, Bathrooms = @Bathrooms, PetsAllowed = @PetsAllowed WHERE ApartmentId = @ApartmentId";
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Name", apartment.Name);
-                        command.Parameters.AddWithValue("@Address", apartment.Address);
-                        command.Parameters.AddWithValue("@Rent", apartment.Rent);
-                        command.Parameters.AddWithValue("@Size", apartment.Size);
-                        command.Parameters.AddWithValue("@Bedrooms", apartment.Bedrooms);
-                        command.Parameters.AddWithValue("@Bathrooms", apartment.Bathrooms);
-                        command.Parameters.AddWithValue("@PetsAllowed", apartment.PetsAllowed);
-                        command.Parameters.AddWithValue("@ApartmentId", apartment.ApartmentId);
-                        command.ExecuteNonQuery();
-                    }
-                }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-            }
-        }
-
-        public Apartment GetApartment(int apartmentId)
-        {
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "SELECT * FROM Apartments WHERE ApartmentId = @ApartmentId";
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@ApartmentId", apartmentId);
-                        using (var reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                return new Apartment(
-                                    reader.GetString("Address"),
-                                    reader.GetString("City"),
-                                    reader.GetString("State"),
-                                    reader.GetInt32("ZipCode"),
-                                    reader.GetString("Source"),
-                                    reader.GetBoolean("PetsAllowed")
-                                )
-                                {
-                                    ApartmentId = reader.GetInt32("ApartmentId"),
-                                    Name = reader.GetString("Name"),
-                                    Rent = reader.GetDecimal("Rent"),
-                                    Size = reader.GetInt32("Size"),
-                                    Bedrooms = reader.GetInt32("Bedrooms"),
-                                    Bathrooms = reader.GetInt32("Bathrooms")
-                                };
-                            }
-                        }
-                    }
-                }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-            }
-            return null;
-        }
-
-        public static List<Apartment> GetFilteredApartments(int minRent, int maxRent, string location)
+        public static List<Apartment> GetFilteredApartments(decimal minPrice, decimal maxPrice, string location)
         {
             var apartments = new List<Apartment>();
 
@@ -168,32 +57,31 @@ namespace SmartRentCompass
                 try
                 {
                     connection.Open();
-                    string query = "SELECT * FROM Apartments WHERE Rent BETWEEN @minRent AND @maxRent AND Address LIKE @location";
+                    string query = "SELECT * FROM Apartments WHERE Price BETWEEN @minPrice AND @maxPrice AND Address = @location";
                     using (var command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@minRent", minRent);
-                        command.Parameters.AddWithValue("@maxRent", maxRent);
-                        command.Parameters.AddWithValue("@location", $"%{location}%");
+                        command.Parameters.AddWithValue("@minPrice", minPrice);
+                        command.Parameters.AddWithValue("@maxPrice", maxPrice);
+                        command.Parameters.AddWithValue("@location", location);
 
                         using (var reader = command.ExecuteReader())
                         {
                             while (reader.Read())
                             {
                                 apartments.Add(new Apartment(
-                                    reader.GetString("Address"),
-                                    reader.GetString("City"),
-                                    reader.GetString("State"),
-                                    reader.GetInt32("ZipCode"),
-                                    reader.GetString("Source"),
-                                    reader.GetBoolean("PetsAllowed")
-                                )
+                                    reader["Address"].ToString(),
+                                    reader["City"].ToString(),
+                                    reader["State"].ToString(),
+                                    Convert.ToInt32(reader["ZipCode"]),
+                                    reader["Source"].ToString(),
+                                    Convert.ToBoolean(reader["PetsAllowed"]))
                                 {
-                                    ApartmentId = reader.GetInt32("ApartmentId"),
-                                    Name = reader.GetString("Name"),
-                                    Rent = reader.GetDecimal("Rent"),
-                                    Size = reader.GetInt32("Size"),
-                                    Bedrooms = reader.GetInt32("Bedrooms"),
-                                    Bathrooms = reader.GetInt32("Bathrooms")
+                                    ApartmentId = Convert.ToInt32(reader["ApartmentID"]),
+                                    Name = reader["Name"].ToString(),
+                                    Rent = Convert.ToDecimal(reader["Price"]), // Changed Rent to Price
+                                    Size = Convert.ToInt32(reader["SquareFeet"]),
+                                    Bedrooms = Convert.ToInt32(reader["Bedrooms"]),
+                                    Bathrooms = Convert.ToInt32(reader["Bathrooms"])
                                 });
                             }
                         }
@@ -212,36 +100,6 @@ namespace SmartRentCompass
             }
 
             return apartments;
-        }
-
-        public static void AddReview(int userId, int apartmentId, int rating, string comment)
-        {
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "INSERT INTO Reviews (UserId, ApartmentId, Rating, Comment) VALUES (@userId, @apartmentId, @rating, @comment)";
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@userId", userId);
-                        command.Parameters.AddWithValue("@apartmentId", apartmentId);
-                        command.Parameters.AddWithValue("@rating", rating);
-                        command.Parameters.AddWithValue("@comment", comment);
-                        command.ExecuteNonQuery();
-                    }
-                }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-            }
         }
 
         public static List<Review> GetReviews(int apartmentId)
@@ -284,6 +142,36 @@ namespace SmartRentCompass
             }
 
             return reviews;
+        }
+
+        public static void AddReview(int userId, int apartmentId, int rating, string comment)
+        {
+            using (var connection = new MySqlConnection(ConnectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    string query = "INSERT INTO Reviews (UserId, ApartmentId, Rating, Comment) VALUES (@UserId, @ApartmentId, @Rating, @Comment)";
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@UserId", userId);
+                        command.Parameters.AddWithValue("@ApartmentId", apartmentId);
+                        command.Parameters.AddWithValue("@Rating", rating);
+                        command.Parameters.AddWithValue("@Comment", comment);
+                        command.ExecuteNonQuery();
+                    }
+                }
+                catch (MySqlException ex)
+                {
+                    Console.WriteLine($"MySQL Error: {ex.Message}");
+                    // Additional logging or actions
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"General Error: {ex.Message}");
+                    // Additional logging or actions
+                }
+            }
         }
     }
 }

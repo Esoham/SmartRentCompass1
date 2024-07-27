@@ -1,47 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
+using SmartRentCompass;
 
-namespace SmartRentCompass
+public static class ApartmentSearch
 {
-    public static class ApartmentSearch
+    public static void Search()
     {
-        public static void Search()
+        Console.WriteLine("Starting apartment search...");
+
+        int minRent = GetValidatedRent("Enter minimum rent: ");
+        int maxRent = GetValidatedRent("Enter maximum rent: ");
+
+        Console.Write("Enter location: ");
+        string location = Console.ReadLine();
+
+        List<Apartment> apartments = ApartmentDatabaseHelper.GetFilteredApartments(minRent, maxRent, location);
+
+        Console.WriteLine("Filtered Apartments:");
+        foreach (var apt in apartments)
         {
-            Console.WriteLine("Starting apartment search...");
+            Console.WriteLine($"- {apt.Name}: ${apt.Rent} per month, {apt.Address}");
+        }
+    }
 
-            // Implement scraping logic and insert apartments into database
-            // ...
+    public static void SearchByRentAndLocation(int minRent, int maxRent, string location)
+    {
+        Console.WriteLine("Searching apartments by rent and location...");
 
-            // Advanced filtering
-            Console.Write("Enter minimum rent: ");
-            int minRent = int.Parse(Console.ReadLine());
+        List<Apartment> apartments = ApartmentDatabaseHelper.GetFilteredApartments(minRent, maxRent, location);
 
-            Console.Write("Enter maximum rent: ");
-            int maxRent = int.Parse(Console.ReadLine());
+        Console.WriteLine("Filtered Apartments:");
+        foreach (var apt in apartments)
+        {
+            Console.WriteLine($"- {apt.Name}: ${apt.Rent} per month, {apt.Address}");
+        }
+    }
 
-            Console.Write("Enter location: ");
-            string location = Console.ReadLine();
-
-            List<Apartment> apartments = ApartmentDatabaseHelper.GetFilteredApartments(minRent, maxRent, location);
-
-            Console.WriteLine("Filtered Apartments:");
-            foreach (var apt in apartments)
+    private static int GetValidatedRent(string prompt)
+    {
+        int rent;
+        while (true)
+        {
+            Console.Write(prompt);
+            string input = Console.ReadLine();
+            input = input.Replace(",", "").Trim(); // Remove commas and whitespace
+            if (int.TryParse(input, out rent))
             {
-                Console.WriteLine($"- {apt.Name}: ${apt.Rent} per month, {apt.Address}");
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Invalid input. Please enter a valid number.");
             }
         }
-
-        public static void SearchByRentAndLocation(int minRent, int maxRent, string location)
-        {
-            Console.WriteLine("Searching apartments by rent and location...");
-
-            List<Apartment> apartments = ApartmentDatabaseHelper.GetFilteredApartments(minRent, maxRent, location);
-
-            Console.WriteLine("Filtered Apartments:");
-            foreach (var apt in apartments)
-            {
-                Console.WriteLine($"- {apt.Name}: ${apt.Rent} per month, {apt.Address}");
-            }
-        }
+        return rent;
     }
 }

@@ -117,10 +117,15 @@ namespace SmartRentCompass
         private static void AddFavorite()
         {
             Console.Write("Enter apartment ID to add to favorites: ");
-            int apartmentId = int.Parse(Console.ReadLine());
-
-            FavoriteDatabaseHelper.AddFavorite(loggedInUserId, apartmentId);
-            Console.WriteLine("Apartment added to favorites.");
+            if (int.TryParse(Console.ReadLine(), out int apartmentId))
+            {
+                FavoriteDatabaseHelper.AddFavorite(loggedInUserId, apartmentId);
+                Console.WriteLine("Apartment added to favorites.");
+            }
+            else
+            {
+                Console.WriteLine("Invalid apartment ID. Please enter a valid number.");
+            }
         }
 
         private static void ViewFavorites()
@@ -131,30 +136,43 @@ namespace SmartRentCompass
         private static void AddReview()
         {
             Console.Write("Enter apartment ID to review: ");
-            int apartmentId = int.Parse(Console.ReadLine());
-
-            Console.Write("Enter rating (1-5): ");
-            int rating = int.Parse(Console.ReadLine());
-
-            Console.Write("Enter comment: ");
-            string comment = Console.ReadLine();
-
-            ApartmentDatabaseHelper.AddReview(loggedInUserId, apartmentId, rating, comment);
-            Console.WriteLine("Review added.");
+            if (int.TryParse(Console.ReadLine(), out int apartmentId))
+            {
+                Console.Write("Enter rating (1-5): ");
+                if (int.TryParse(Console.ReadLine(), out int rating) && rating >= 1 && rating <= 5)
+                {
+                    Console.Write("Enter comment: ");
+                    string comment = Console.ReadLine();
+                    ApartmentDatabaseHelper.AddReview(loggedInUserId, apartmentId, rating, comment);
+                    Console.WriteLine("Review added.");
+                }
+                else
+                {
+                    Console.WriteLine("Invalid rating. Please enter a number between 1 and 5.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid apartment ID. Please enter a valid number.");
+            }
         }
 
         private static void ViewReviews()
         {
             Console.Write("Enter apartment ID to view reviews: ");
-            int apartmentId = int.Parse(Console.ReadLine());
-
-            var reviews = ApartmentDatabaseHelper.GetReviews(apartmentId);
-
-            foreach (var review in reviews)
+            if (int.TryParse(Console.ReadLine(), out int apartmentId))
             {
-                Console.WriteLine($"{review.Username}: {review.Rating}/5");
-                Console.WriteLine($"Comment: {review.Comment}");
-                Console.WriteLine();
+                var reviews = ApartmentDatabaseHelper.GetReviews(apartmentId);
+                foreach (var review in reviews)
+                {
+                    Console.WriteLine($"{review.Username}: {review.Rating}/5");
+                    Console.WriteLine($"Comment: {review.Comment}");
+                    Console.WriteLine();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid apartment ID. Please enter a valid number.");
             }
         }
     }
