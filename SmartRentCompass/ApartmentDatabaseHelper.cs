@@ -1,176 +1,224 @@
-﻿using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using MySql.Data.MySqlClient;
 
 namespace SmartRentCompass
 {
+    /// <summary>
+    /// Provides methods to interact with the Apartments database.
+    /// </summary>
     public class ApartmentDatabaseHelper
     {
-        private static readonly string ConnectionString = "Server=localhost;Database=smartrentcompass;User ID=root;Password=Bourgeoi32#;";
+        private readonly string connectionString;
 
-        public string Username { get; set; } = string.Empty;
-
-        public ApartmentDatabaseHelper()
+        /// <summary>
+        /// Initializes a new instance of the ApartmentDatabaseHelper class.
+        /// </summary>
+        /// <param name="connectionString">The database connection string.</param>
+        /// <exception cref="ArgumentNullException">Thrown when the connection string is null or empty.</exception>
+        public ApartmentDatabaseHelper(string connectionString)
         {
-            // Initialize non-nullable properties
-            Username = string.Empty; // or any default value you consider appropriate
+            this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        public void AddApartment(Apartment apartment)
-        {
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "INSERT INTO Apartments (Name, Address, Price, Bedrooms, Bathrooms, SquareFeet) VALUES (@Name, @Address, @Price, @Bedrooms, @Bathrooms, @SquareFeet)";
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Name", apartment.Name);
-                        command.Parameters.AddWithValue("@Address", apartment.Address);
-                        command.Parameters.AddWithValue("@Price", apartment.Rent); // Assuming Rent maps to Price
-                        command.Parameters.AddWithValue("@Bedrooms", apartment.Bedrooms);
-                        command.Parameters.AddWithValue("@Bathrooms", apartment.Bathrooms);
-                        command.Parameters.AddWithValue("@SquareFeet", apartment.Size); // Assuming Size maps to SquareFeet
-                        command.ExecuteNonQuery();
-                    }
-                }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-            }
-        }
-
-        public static List<Apartment> GetFilteredApartments(decimal minPrice, decimal maxPrice, string location)
+        /// <summary>
+        /// Retrieves all apartments from the database.
+        /// </summary>
+        /// <returns>A list of apartments.</returns>
+        public List<Apartment> GetAllApartments()
         {
             var apartments = new List<Apartment>();
 
-            using (var connection = new MySqlConnection(ConnectionString))
+            try
             {
-                try
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
                     connection.Open();
-                    string query = "SELECT * FROM Apartments WHERE Price BETWEEN @minPrice AND @maxPrice AND Address = @location";
-                    using (var command = new MySqlCommand(query, connection))
+                    string query = "SELECT * FROM Apartments";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@minPrice", minPrice);
-                        command.Parameters.AddWithValue("@maxPrice", maxPrice);
-                        command.Parameters.AddWithValue("@location", location);
-
-                        using (var reader = command.ExecuteReader())
+                        using (MySqlDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
                             {
-                                apartments.Add(new Apartment(
-                                    reader["Address"].ToString(),
-                                    reader["City"].ToString(),
-                                    reader["State"].ToString(),
-                                    Convert.ToInt32(reader["ZipCode"]),
-                                    reader["Source"].ToString(),
-                                    Convert.ToBoolean(reader["PetsAllowed"]))
-                                {
-                                    ApartmentId = Convert.ToInt32(reader["ApartmentID"]),
-                                    Name = reader["Name"].ToString(),
-                                    Rent = Convert.ToDecimal(reader["Price"]), // Changed Rent to Price
-                                    Size = Convert.ToInt32(reader["SquareFeet"]),
-                                    Bedrooms = Convert.ToInt32(reader["Bedrooms"]),
-                                    Bathrooms = Convert.ToInt32(reader["Bathrooms"])
-                                });
+                                var apartment = new Apartment(
+                                    reader.GetInt32("ApartmentId"),
+                                    reader.GetString("Name"),
+                                    reader.GetString("Address"),
+                                    reader.GetString("City"),
+                                    reader.GetString("State"),
+                                    reader.GetInt32("ZipCode"),
+                                    reader.GetString("Source"),
+                                    reader.GetBoolean("PetsAllowed"),
+                                    reader.GetDecimal("Price"),
+                                    reader.GetInt32("Size"),
+                                    reader.GetInt32("Bedrooms"),
+                                    reader.GetInt32("Bathrooms"),
+                                    reader.GetBoolean("IsAvailable"), // Ensure this matches the database column
+                                    reader.GetString("Description") // Ensure this matches the database column
+                                );
+                                apartments.Add(apartment);
                             }
                         }
                     }
                 }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while fetching apartments: {ex.Message}");
             }
 
             return apartments;
         }
 
-        public static List<Review> GetReviews(int apartmentId)
+        /// <summary>
+        /// Retrieves an apartment by its ID from the database.
+        /// </summary>
+        /// <param name="id">The apartment ID.</param>
+        /// <returns>The apartment with the specified ID, or null if not found.</returns>
+        public Apartment GetApartmentById(int id)
         {
-            var reviews = new List<Review>();
+            Apartment apartment = null;
 
-            using (var connection = new MySqlConnection(ConnectionString))
+            try
             {
-                try
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
                     connection.Open();
-                    string query = "SELECT Reviews.*, Users.Username FROM Reviews JOIN Users ON Reviews.UserId = Users.UserId WHERE ApartmentId = @apartmentId";
-                    using (var command = new MySqlCommand(query, connection))
+                    string query = "SELECT * FROM Apartments WHERE ApartmentId = @Id";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@apartmentId", apartmentId);
-                        using (var reader = command.ExecuteReader())
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        using (MySqlDataReader reader = command.ExecuteReader())
                         {
-                            while (reader.Read())
+                            if (reader.Read())
                             {
-                                reviews.Add(new Review
-                                {
-                                    Username = reader["Username"].ToString(),
-                                    Rating = int.Parse(reader["Rating"].ToString()),
-                                    Comment = reader["Comment"].ToString()
-                                });
+                                apartment = new Apartment(
+                                    reader.GetInt32("ApartmentId"),
+                                    reader.GetString("Name"),
+                                    reader.GetString("Address"),
+                                    reader.GetString("City"),
+                                    reader.GetString("State"),
+                                    reader.GetInt32("ZipCode"),
+                                    reader.GetString("Source"),
+                                    reader.GetBoolean("PetsAllowed"),
+                                    reader.GetDecimal("Price"),
+                                    reader.GetInt32("Size"),
+                                    reader.GetInt32("Bedrooms"),
+                                    reader.GetInt32("Bathrooms"),
+                                    reader.GetBoolean("IsAvailable"), // Ensure this matches the database column
+                                    reader.GetString("Description") // Ensure this matches the database column
+                                );
                             }
                         }
                     }
                 }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while fetching the apartment with ID {id}: {ex.Message}");
             }
 
-            return reviews;
+            return apartment;
         }
 
-        public static void AddReview(int userId, int apartmentId, int rating, string comment)
+        /// <summary>
+        /// Adds a new apartment to the database.
+        /// </summary>
+        /// <param name="apartment">The apartment to add.</param>
+        public void AddApartment(Apartment apartment)
         {
-            using (var connection = new MySqlConnection(ConnectionString))
+            if (apartment == null) throw new ArgumentNullException(nameof(apartment));
+
+            try
             {
-                try
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
                     connection.Open();
-                    string query = "INSERT INTO Reviews (UserId, ApartmentId, Rating, Comment) VALUES (@UserId, @ApartmentId, @Rating, @Comment)";
-                    using (var command = new MySqlCommand(query, connection))
+                    string query = "INSERT INTO Apartments (Address, City, State, ZipCode, Price, Bedrooms, Bathrooms, IsAvailable, Description) VALUES (@Address, @City, @State, @ZipCode, @Price, @Bedrooms, @Bathrooms, @IsAvailable, @Description)";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@UserId", userId);
-                        command.Parameters.AddWithValue("@ApartmentId", apartmentId);
-                        command.Parameters.AddWithValue("@Rating", rating);
-                        command.Parameters.AddWithValue("@Comment", comment);
+                        command.Parameters.AddWithValue("@Address", apartment.Address);
+                        command.Parameters.AddWithValue("@City", apartment.City);
+                        command.Parameters.AddWithValue("@State", apartment.State);
+                        command.Parameters.AddWithValue("@ZipCode", apartment.ZipCode);
+                        command.Parameters.AddWithValue("@Price", apartment.Price);
+                        command.Parameters.AddWithValue("@Bedrooms", apartment.Bedrooms);
+                        command.Parameters.AddWithValue("@Bathrooms", apartment.Bathrooms);
+                        command.Parameters.AddWithValue("@IsAvailable", apartment.IsAvailable);
+                        command.Parameters.AddWithValue("@Description", apartment.Description);
+
                         command.ExecuteNonQuery();
                     }
                 }
-                catch (MySqlException ex)
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while adding a new apartment: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing apartment in the database.
+        /// </summary>
+        /// <param name="apartment">The apartment to update.</param>
+        public void UpdateApartment(Apartment apartment)
+        {
+            if (apartment == null) throw new ArgumentNullException(nameof(apartment));
+
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
+                    connection.Open();
+                    string query = "UPDATE Apartments SET Address = @Address, City = @City, State = @State, ZipCode = @ZipCode, Price = @Price, Bedrooms = @Bedrooms, Bathrooms = @Bathrooms, IsAvailable = @IsAvailable, Description = @Description WHERE ApartmentId = @Id";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", apartment.ApartmentId);
+                        command.Parameters.AddWithValue("@Address", apartment.Address);
+                        command.Parameters.AddWithValue("@City", apartment.City);
+                        command.Parameters.AddWithValue("@State", apartment.State);
+                        command.Parameters.AddWithValue("@ZipCode", apartment.ZipCode);
+                        command.Parameters.AddWithValue("@Price", apartment.Price);
+                        command.Parameters.AddWithValue("@Bedrooms", apartment.Bedrooms);
+                        command.Parameters.AddWithValue("@Bathrooms", apartment.Bathrooms);
+                        command.Parameters.AddWithValue("@IsAvailable", apartment.IsAvailable);
+                        command.Parameters.AddWithValue("@Description", apartment.Description);
+
+                        command.ExecuteNonQuery();
+                    }
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while updating the apartment with ID {apartment.ApartmentId}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Deletes an apartment from the database.
+        /// </summary>
+        /// <param name="id">The ID of the apartment to delete.</param>
+        public void DeleteApartment(int id)
+        {
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
+                    connection.Open();
+                    string query = "DELETE FROM Apartments WHERE ApartmentId = @Id";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        command.ExecuteNonQuery();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while deleting the apartment with ID {id}: {ex.Message}");
             }
         }
     }

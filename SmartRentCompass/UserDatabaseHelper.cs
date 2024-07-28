@@ -1,135 +1,193 @@
-﻿using MySql.Data.MySqlClient;
-using System;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using MySql.Data.MySqlClient;
 
-public class UserDatabaseHelper
+namespace SmartRentCompass
 {
-    private static readonly string ConnectionString = "Server=localhost;Database=smartrentcompass;User ID=root;Password=Bourgeoi32#;";
-
-    public static void RegisterUser(string username, string password)
+    /// <summary>
+    /// Provides methods to interact with the Users database.
+    /// </summary>
+    public class UserDatabaseHelper
     {
-        var salt = GenerateSalt();
-        var hash = HashPassword(password, salt);
+        private readonly string connectionString;
 
-        using (var connection = new MySqlConnection(ConnectionString))
+        /// <summary>
+        /// Initializes a new instance of the UserDatabaseHelper class.
+        /// </summary>
+        /// <param name="connectionString">The database connection string.</param>
+        /// <exception cref="ArgumentNullException">Thrown when the connection string is null or empty.</exception>
+        public UserDatabaseHelper(string connectionString)
         {
-            try
-            {
-                connection.Open();
-                string insertUser = @"INSERT INTO Users (Username, PasswordHash, Salt) VALUES (@username, @passwordHash, @salt)";
-                using (var command = new MySqlCommand(insertUser, connection))
-                {
-                    command.Parameters.AddWithValue("@username", username);
-                    command.Parameters.AddWithValue("@passwordHash", hash);
-                    command.Parameters.AddWithValue("@salt", salt);
-                    command.ExecuteNonQuery();
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine($"MySQL Error: {ex.Message}");
-                // Additional logging or actions
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"General Error: {ex.Message}");
-                // Additional logging or actions
-            }
+            this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
-    }
 
-    public static bool ValidateUser(string username, string password)
-    {
-        using (var connection = new MySqlConnection(ConnectionString))
+        /// <summary>
+        /// Retrieves all users from the database.
+        /// </summary>
+        /// <returns>A list of users.</returns>
+        public List<User> GetAllUsers()
         {
+            var users = new List<User>();
+
             try
             {
-                connection.Open();
-                string getUser = @"SELECT PasswordHash, Salt FROM Users WHERE Username = @username";
-                using (var command = new MySqlCommand(getUser, connection))
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
-                    command.Parameters.AddWithValue("@username", username);
-                    using (var reader = command.ExecuteReader())
+                    connection.Open();
+                    string query = "SELECT * FROM Users";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
-                        if (reader.Read())
+                        using (MySqlDataReader reader = command.ExecuteReader())
                         {
-                            var storedHash = reader["PasswordHash"].ToString();
-                            var storedSalt = reader["Salt"].ToString();
-                            var hash = HashPassword(password, storedSalt);
-
-                            return storedHash == hash;
+                            while (reader.Read())
+                            {
+                                var user = new User(
+                                    reader.GetInt32(0),
+                                    reader.GetString(1),
+                                    reader.GetString(2),
+                                    reader.GetString(3)
+                                );
+                                users.Add(user);
+                            }
                         }
                     }
                 }
             }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine($"MySQL Error: {ex.Message}");
-                // Additional logging or actions
-            }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error: {ex.Message}");
-                // Additional logging or actions
+                Console.WriteLine($"An error occurred while fetching users: {ex.Message}");
             }
-        }
-        return false;
-    }
 
-    public static int GetUserId(string username)
-    {
-        using (var connection = new MySqlConnection(ConnectionString))
+            return users;
+        }
+
+        /// <summary>
+        /// Retrieves a user by their ID from the database.
+        /// </summary>
+        /// <param name="id">The user ID.</param>
+        /// <returns>The user with the specified ID, or null if not found.</returns>
+        public User GetUserById(int id)
         {
+            User user = null;
+
             try
             {
-                connection.Open();
-                string getUserId = @"SELECT UserId FROM Users WHERE Username = @username";
-                using (var command = new MySqlCommand(getUserId, connection))
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
-                    command.Parameters.AddWithValue("@username", username);
-                    using (var reader = command.ExecuteReader())
+                    connection.Open();
+                    string query = "SELECT * FROM Users WHERE Id = @Id";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
-                        if (reader.Read())
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        using (MySqlDataReader reader = command.ExecuteReader())
                         {
-                            return Convert.ToInt32(reader["UserId"]);
+                            if (reader.Read())
+                            {
+                                user = new User(
+                                    reader.GetInt32(0),
+                                    reader.GetString(1),
+                                    reader.GetString(2),
+                                    reader.GetString(3)
+                                );
+                            }
                         }
                     }
                 }
             }
-            catch (MySqlException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"MySQL Error: {ex.Message}");
-                // Additional logging or actions
+                Console.WriteLine($"An error occurred while fetching the user with ID {id}: {ex.Message}");
+            }
+
+            return user;
+        }
+
+        /// <summary>
+        /// Adds a new user to the database.
+        /// </summary>
+        /// <param name="user">The user to add.</param>
+        public void AddUser(User user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "INSERT INTO Users (FirstName, LastName, Email) VALUES (@FirstName, @LastName, @Email)";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@FirstName", user.FirstName);
+                        command.Parameters.AddWithValue("@LastName", user.LastName);
+                        command.Parameters.AddWithValue("@Email", user.Email);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error: {ex.Message}");
-                // Additional logging or actions
+                Console.WriteLine($"An error occurred while adding a new user: {ex.Message}");
             }
         }
-        return -1; // or another appropriate default value or error code
-    }
 
-    private static string GenerateSalt()
-    {
-        const int saltSize = 16;
-        using (var rng = new RNGCryptoServiceProvider())
+        /// <summary>
+        /// Updates an existing user in the database.
+        /// </summary>
+        /// <param name="user">The user to update.</param>
+        public void UpdateUser(User user)
         {
-            var saltBytes = new byte[saltSize];
-            rng.GetBytes(saltBytes);
-            return Convert.ToBase64String(saltBytes);
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "UPDATE Users SET FirstName = @FirstName, LastName = @LastName, Email = @Email WHERE Id = @Id";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", user.Id);
+                        command.Parameters.AddWithValue("@FirstName", user.FirstName);
+                        command.Parameters.AddWithValue("@LastName", user.LastName);
+                        command.Parameters.AddWithValue("@Email", user.Email);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while updating the user with ID {user.Id}: {ex.Message}");
+            }
         }
-    }
 
-    private static string HashPassword(string password, string salt)
-    {
-        using (var sha256 = SHA256.Create())
+        /// <summary>
+        /// Deletes a user from the database.
+        /// </summary>
+        /// <param name="id">The ID of the user to delete.</param>
+        public void DeleteUser(int id)
         {
-            var saltedPassword = string.Concat(password, salt);
-            var saltedPasswordBytes = Encoding.UTF8.GetBytes(saltedPassword);
-            var hashBytes = sha256.ComputeHash(saltedPasswordBytes);
-            return Convert.ToBase64String(hashBytes);
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM Users WHERE Id = @Id";
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while deleting the user with ID {id}: {ex.Message}");
+            }
         }
     }
 }

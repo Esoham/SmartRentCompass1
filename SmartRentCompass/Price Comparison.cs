@@ -26,21 +26,21 @@ namespace SmartRentCompass
                             while (reader.Read())
                             {
                                 apartments.Add(new Apartment(
-                                    reader["Address"].ToString(),
-                                    reader["City"].ToString(),
-                                    reader["State"].ToString(),
-                                    int.Parse(reader["ZipCode"].ToString()),
-                                    reader["Source"].ToString(),
-                                    bool.Parse(reader["PetsAllowed"].ToString())
-                                )
-                                {
-                                    ApartmentId = int.Parse(reader["ApartmentId"].ToString()),
-                                    Name = reader["Name"].ToString(),
-                                    Rent = decimal.Parse(reader["Rent"].ToString()), // Updated to Rent
-                                    Size = int.Parse(reader["Size"].ToString()),    // Added Size property
-                                    Bedrooms = int.Parse(reader["Bedrooms"].ToString()), // Added Bedrooms property
-                                    Bathrooms = int.Parse(reader["Bathrooms"].ToString()) // Added Bathrooms property
-                                });
+                                    reader.GetInt32("ApartmentId"),
+                                    reader.GetString("Name"),
+                                    reader.GetString("Address"),
+                                    reader.GetString("City"),
+                                    reader.GetString("State"),
+                                    reader.GetInt32("ZipCode"),
+                                    reader.GetString("Source"),
+                                    reader.GetBoolean("PetsAllowed"),
+                                    reader.GetDecimal("Price"),
+                                    reader.GetInt32("Size"),
+                                    reader.GetInt32("Bedrooms"),
+                                    reader.GetInt32("Bathrooms"),
+                                    reader.GetBoolean("IsAvailable"),
+                                    reader.GetString("Description")
+                                ));
                             }
                         }
                     }
@@ -67,9 +67,9 @@ namespace SmartRentCompass
             foreach (var group in groupedByLocation)
             {
                 Console.WriteLine($"Best deals in {group.Key}:");
-                foreach (var apartment in group.OrderBy(a => a.Rent).Take(3)) // Updated to Rent
+                foreach (var apartment in group.OrderBy(a => a.Price).Take(3))
                 {
-                    Console.WriteLine($"- {apartment.Name}: ${apartment.Rent} per month from {apartment.Source}"); // Updated to Rent
+                    Console.WriteLine($"- {apartment.Name}: ${apartment.Price} per month from {apartment.Source}");
                 }
             }
         }

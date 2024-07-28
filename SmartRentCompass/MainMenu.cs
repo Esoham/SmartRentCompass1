@@ -2,178 +2,126 @@
 
 namespace SmartRentCompass
 {
+    /// <summary>
+    /// Provides methods to display and handle the main menu options.
+    /// </summary>
     public static class MainMenu
     {
-        private static int loggedInUserId = -1; // Track logged in user
-
-        public static void Start()
+        /// <summary>
+        /// Displays the main menu and handles user input.
+        /// </summary>
+        public static void ShowMenu()
         {
-            bool exit = false;
-            while (!exit)
-            {
-                Console.WriteLine("Main Menu:");
-                if (loggedInUserId == -1)
-                {
-                    Console.WriteLine("1. Register");
-                    Console.WriteLine("2. Login");
-                }
-                else
-                {
-                    Console.WriteLine("3. Search Apartments");
-                    Console.WriteLine("4. View Alerts");
-                    Console.WriteLine("5. Settings");
-                    Console.WriteLine("6. Compare Prices");
-                    Console.WriteLine("7. Add Favorite");
-                    Console.WriteLine("8. View Favorites");
-                    Console.WriteLine("9. Add Review");
-                    Console.WriteLine("10. View Reviews");
-                    Console.WriteLine("11. Logout");
-                }
-                Console.WriteLine("0. Exit");
-                Console.Write("Please choose an option: ");
+            Console.WriteLine("Welcome to SmartRent Compass!");
+            Console.WriteLine("1. View Alerts");
+            Console.WriteLine("2. Search Apartments");
+            Console.WriteLine("3. View Favorite Apartments");
+            Console.WriteLine("4. Add Favorite Apartment");
+            Console.WriteLine("5. Remove Favorite Apartment");
+            Console.WriteLine("6. Exit");
 
-                switch (Console.ReadLine())
-                {
-                    case "1":
-                        if (loggedInUserId == -1) Register();
-                        break;
-                    case "2":
-                        if (loggedInUserId == -1) Login();
-                        break;
-                    case "3":
-                        if (loggedInUserId != -1) ApartmentSearch.Search();
-                        break;
-                    case "4":
-                        if (loggedInUserId != -1) Alerts.ViewAlerts();
-                        break;
-                    case "5":
-                        if (loggedInUserId != -1) Settings.Configure();
-                        break;
-                    case "6":
-                        if (loggedInUserId != -1) PriceComparison.ComparePrices();
-                        break;
-                    case "7":
-                        if (loggedInUserId != -1) AddFavorite();
-                        break;
-                    case "8":
-                        if (loggedInUserId != -1) ViewFavorites();
-                        break;
-                    case "9":
-                        if (loggedInUserId != -1) AddReview();
-                        break;
-                    case "10":
-                        if (loggedInUserId != -1) ViewReviews();
-                        break;
-                    case "11":
-                        if (loggedInUserId != -1) Logout();
-                        break;
-                    case "0":
-                        exit = true;
-                        break;
-                    default:
-                        Console.WriteLine("Invalid option, please try again.");
-                        break;
-                }
+            Console.Write("Please select an option: ");
+            var input = Console.ReadLine();
+
+            switch (input)
+            {
+                case "1":
+                    Alerts.ViewAlerts();
+                    break;
+                case "2":
+                    SearchApartments();
+                    break;
+                case "3":
+                    ViewFavoriteApartments();
+                    break;
+                case "4":
+                    AddFavoriteApartment();
+                    break;
+                case "5":
+                    RemoveFavoriteApartment();
+                    break;
+                case "6":
+                    Console.WriteLine("Exiting the application...");
+                    Environment.Exit(0);
+                    break;
+                default:
+                    Console.WriteLine("Invalid option. Please try again.");
+                    break;
             }
         }
 
-        private static void Register()
+        private static void SearchApartments()
         {
-            Console.Write("Enter username: ");
-            string username = Console.ReadLine();
-
-            Console.Write("Enter password: ");
-            string password = Console.ReadLine();
-
-            UserDatabaseHelper.RegisterUser(username, password);
-            Console.WriteLine("Registration successful.");
+            Console.WriteLine("Searching for apartments...");
+            // Example implementation: Call the apartment search logic here
         }
 
-        private static void Login()
+        private static void ViewFavoriteApartments()
         {
-            Console.Write("Enter username: ");
-            string username = Console.ReadLine();
-
-            Console.Write("Enter password: ");
-            string password = Console.ReadLine();
-
-            if (UserDatabaseHelper.ValidateUser(username, password))
-            {
-                loggedInUserId = UserDatabaseHelper.GetUserId(username); // Assuming you have a method to get user ID
-                Console.WriteLine("Login successful.");
-            }
-            else
-            {
-                Console.WriteLine("Invalid username or password.");
-            }
+            Console.WriteLine("Viewing favorite apartments...");
+            // Example implementation: Call the favorite apartments logic here
         }
 
-        private static void Logout()
+        private static void AddFavoriteApartment()
         {
-            loggedInUserId = -1;
-            Console.WriteLine("Logged out successfully.");
-        }
-
-        private static void AddFavorite()
-        {
-            Console.Write("Enter apartment ID to add to favorites: ");
-            if (int.TryParse(Console.ReadLine(), out int apartmentId))
+            try
             {
-                FavoriteDatabaseHelper.AddFavorite(loggedInUserId, apartmentId);
+                Console.Write("Enter the User ID: ");
+                if (!int.TryParse(Console.ReadLine(), out int userId))
+                {
+                    throw new ArgumentException("Invalid User ID.");
+                }
+
+                Console.Write("Enter the Apartment ID: ");
+                if (!int.TryParse(Console.ReadLine(), out int apartmentId))
+                {
+                    throw new ArgumentException("Invalid Apartment ID.");
+                }
+
+                var favoriteHelper = new FavoriteDatabaseHelper(GetConnectionString());
+                favoriteHelper.AddFavoriteApartment(userId, apartmentId);
                 Console.WriteLine("Apartment added to favorites.");
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Invalid apartment ID. Please enter a valid number.");
+                Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
 
-        private static void ViewFavorites()
+        private static void RemoveFavoriteApartment()
         {
-            FavoriteDatabaseHelper.ViewFavorites(loggedInUserId);
-        }
+            try
+            {
+                Console.Write("Enter the User ID: ");
+                if (!int.TryParse(Console.ReadLine(), out int userId))
+                {
+                    throw new ArgumentException("Invalid User ID.");
+                }
 
-        private static void AddReview()
-        {
-            Console.Write("Enter apartment ID to review: ");
-            if (int.TryParse(Console.ReadLine(), out int apartmentId))
-            {
-                Console.Write("Enter rating (1-5): ");
-                if (int.TryParse(Console.ReadLine(), out int rating) && rating >= 1 && rating <= 5)
+                Console.Write("Enter the Apartment ID: ");
+                if (!int.TryParse(Console.ReadLine(), out int apartmentId))
                 {
-                    Console.Write("Enter comment: ");
-                    string comment = Console.ReadLine();
-                    ApartmentDatabaseHelper.AddReview(loggedInUserId, apartmentId, rating, comment);
-                    Console.WriteLine("Review added.");
+                    throw new ArgumentException("Invalid Apartment ID.");
                 }
-                else
-                {
-                    Console.WriteLine("Invalid rating. Please enter a number between 1 and 5.");
-                }
+
+                var favoriteHelper = new FavoriteDatabaseHelper(GetConnectionString());
+                favoriteHelper.RemoveFavoriteApartment(userId, apartmentId);
+                Console.WriteLine("Apartment removed from favorites.");
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Invalid apartment ID. Please enter a valid number.");
+                Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
 
-        private static void ViewReviews()
+        /// <summary>
+        /// Fetches the connection string from the configuration file.
+        /// </summary>
+        /// <returns>The connection string.</returns>
+        private static string GetConnectionString()
         {
-            Console.Write("Enter apartment ID to view reviews: ");
-            if (int.TryParse(Console.ReadLine(), out int apartmentId))
-            {
-                var reviews = ApartmentDatabaseHelper.GetReviews(apartmentId);
-                foreach (var review in reviews)
-                {
-                    Console.WriteLine($"{review.Username}: {review.Rating}/5");
-                    Console.WriteLine($"Comment: {review.Comment}");
-                    Console.WriteLine();
-                }
-            }
-            else
-            {
-                Console.WriteLine("Invalid apartment ID. Please enter a valid number.");
-            }
+            // Example implementation: Fetch connection string from configuration
+            return "your_connection_string_here"; // Replace with actual connection string fetching logic
         }
     }
 }

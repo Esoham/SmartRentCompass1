@@ -1,76 +1,37 @@
 ﻿using System;
-using System.Collections.Generic;
-using HtmlAgilityPack;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace SmartRentCompass
 {
-    public class WebScraper
+    /// <summary>
+    /// Provides methods for web scraping.
+    /// </summary>
+    public static class WebScraper
     {
-        public List<Apartment> ScrapeApartments(string url)
+        /// <summary>
+        /// Fetches the content of a web page from the specified URL.
+        /// </summary>
+        /// <param name="url">The URL of the web page to fetch.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the content of the web page.</returns>
+        public static async Task<string> FetchPageContent(string url)
         {
-            var apartments = new List<Apartment>();
+            if (string.IsNullOrEmpty(url)) throw new ArgumentNullException(nameof(url));
 
-            try
+            using (HttpClient client = new HttpClient())
             {
-                var web = new HtmlWeb();
-                var doc = web.Load(url);
-
-                foreach (var node in doc.DocumentNode.SelectNodes("//div[@class='listing']"))
+                try
                 {
-                    // Extract required information
-                    string name = node.SelectSingleNode(".//h2[@class='title']").InnerText;
-                    string address = node.SelectSingleNode(".//span[@class='address']").InnerText;
-                    string city = "Anytown"; // Placeholder - ideally extracted from the node or provided in some way
-                    string state = "Anystate"; // Placeholder - ideally extracted from the node or provided in some way
-                    int zipCode = 12345; // Placeholder - ideally extracted from the node or provided in some way
-                    string source = url;
-                    decimal rent = Convert.ToDecimal(node.SelectSingleNode(".//span[@class='price']").InnerText.Replace("$", string.Empty));
-                    int bedrooms = Convert.ToInt32(node.SelectSingleNode(".//span[@class='bedrooms']").InnerText.Replace(" Bed", string.Empty));
-                    int bathrooms = Convert.ToInt32(node.SelectSingleNode(".//span[@class='bathrooms']").InnerText.Replace(" Bath", string.Empty));
-                    bool petsAllowed = node.SelectSingleNode(".//span[@class='pets']").InnerText.Contains("Pets Allowed");
-
-                    // Create an Apartment object with all required parameters
-                    var apartment = new Apartment(address, city, state, zipCode, source, petsAllowed)
-                    {
-                        Name = name,
-                        Rent = rent,
-                        Bedrooms = bedrooms,
-                        Bathrooms = bathrooms
-                    };
-
-                    apartments.Add(apartment);
+                    HttpResponseMessage response = await client.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadAsStringAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred while fetching the content from {url}: {ex.Message}");
+                    return string.Empty;
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error while scraping {url}: {ex.Message}");
-            }
-
-            return apartments;
-        }
-
-        public List<Apartment> ScrapeMultipleSites(List<string> urls)
-        {
-            var allApartments = new List<Apartment>();
-
-            foreach (var url in urls)
-            {
-                var apartments = ScrapeApartments(url);
-                allApartments.AddRange(apartments);
-            }
-
-            return allApartments;
-        }
-
-        public void SetAlertForNewListings(string url, int intervalInMinutes, Action<List<Apartment>> callback)
-        {
-            var timer = new System.Timers.Timer(intervalInMinutes * 60 * 1000);
-            timer.Elapsed += (sender, e) =>
-            {
-                var newApartments = ScrapeApartments(url);
-                callback(newApartments);
-            };
-            timer.Start();
         }
     }
 }

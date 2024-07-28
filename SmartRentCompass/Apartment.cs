@@ -10,21 +10,35 @@
         public int ZipCode { get; set; }
         public string Source { get; set; }
         public bool PetsAllowed { get; set; }
-        public decimal Rent { get; set; }
-        public int Size { get; set; } // SquareFeet
+        public decimal Price { get; set; }
+        public int Size { get; set; }
         public int Bedrooms { get; set; }
         public int Bathrooms { get; set; }
+        public bool IsAvailable { get; set; } // Added IsAvailable property
+        public string Description { get; set; } // Added Description property
         public string Location => $"{City}, {State}";
 
-        // Constructor
-        public Apartment(string address, string city, string state, int zipCode, string source, bool petsAllowed)
+        public Apartment(int apartmentId, string name, string address, string city, string state, int zipCode, string source, bool petsAllowed, decimal price, int size, int bedrooms, int bathrooms, bool isAvailable, string description)
         {
-            Address = address ?? throw new ArgumentNullException(nameof(address));
-            City = city ?? throw new ArgumentNullException(nameof(city));
-            State = state ?? throw new ArgumentNullException(nameof(state));
+            ApartmentId = apartmentId;
+            Name = name;
+            Address = address;
+            City = city;
+            State = state;
             ZipCode = zipCode;
-            Source = source ?? throw new ArgumentNullException(nameof(source));
+            Source = source;
             PetsAllowed = petsAllowed;
+            Price = price;
+            Size = size;
+            Bedrooms = bedrooms;
+            Bathrooms = bathrooms;
+            IsAvailable = isAvailable;
+            Description = description;
+        }
+
+        public void DisplayApartmentInfo()
+        {
+            Console.WriteLine($"Apartment: {Name}, Price: {Price}, Location: {Location}, Bedrooms: {Bedrooms}, Bathrooms: {Bathrooms}, Available: {IsAvailable}, Description: {Description}");
         }
     }
 }

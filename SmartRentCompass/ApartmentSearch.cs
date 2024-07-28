@@ -1,58 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using SmartRentCompass;
 
-public static class ApartmentSearch
+public class ApartmentSearch
 {
-    public static void Search()
+    private List<Apartment> apartments;
+
+    public ApartmentSearch()
     {
-        Console.WriteLine("Starting apartment search...");
-
-        int minRent = GetValidatedRent("Enter minimum rent: ");
-        int maxRent = GetValidatedRent("Enter maximum rent: ");
-
-        Console.Write("Enter location: ");
-        string location = Console.ReadLine();
-
-        List<Apartment> apartments = ApartmentDatabaseHelper.GetFilteredApartments(minRent, maxRent, location);
-
-        Console.WriteLine("Filtered Apartments:");
-        foreach (var apt in apartments)
-        {
-            Console.WriteLine($"- {apt.Name}: ${apt.Rent} per month, {apt.Address}");
-        }
+        apartments = new List<Apartment>();
     }
 
-    public static void SearchByRentAndLocation(int minRent, int maxRent, string location)
+    public void AddApartment(Apartment apartment)
     {
-        Console.WriteLine("Searching apartments by rent and location...");
-
-        List<Apartment> apartments = ApartmentDatabaseHelper.GetFilteredApartments(minRent, maxRent, location);
-
-        Console.WriteLine("Filtered Apartments:");
-        foreach (var apt in apartments)
-        {
-            Console.WriteLine($"- {apt.Name}: ${apt.Rent} per month, {apt.Address}");
-        }
+        apartments.Add(apartment);
     }
 
-    private static int GetValidatedRent(string prompt)
+    public void SearchByPrice(int maxPrice)
     {
-        int rent;
-        while (true)
+        var results = apartments.Where(a => a.Price <= maxPrice).ToList();
+        if (results.Any())
         {
-            Console.Write(prompt);
-            string input = Console.ReadLine();
-            input = input.Replace(",", "").Trim(); // Remove commas and whitespace
-            if (int.TryParse(input, out rent))
+            foreach (var apartment in results)
             {
-                break;
-            }
-            else
-            {
-                Console.WriteLine("Invalid input. Please enter a valid number.");
+                apartment.DisplayApartmentInfo();
             }
         }
-        return rent;
+        else
+        {
+            Console.WriteLine("No apartments found within the specified price range.");
+        }
     }
 }
