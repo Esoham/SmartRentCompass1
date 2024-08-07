@@ -2,44 +2,26 @@
 
 namespace SmartRentCompass
 {
-    /// <summary>
-    /// Represents a review for an apartment.
-    /// </summary>
     public class Review
     {
         public int Id { get; set; }
-        public int ApartmentId { get; set; }
         public int UserId { get; set; }
-        public string Content { get; set; }
+        public int ApartmentId { get; set; }
+        public string Comment { get; set; }
         public int Rating { get; set; }
+        public DateTime ReviewDate { get; set; }
 
-        /// <summary>
-        /// Initializes a new instance of the Review class.
-        /// </summary>
-        /// <param name="id">The review ID.</param>
-        /// <param name="apartmentId">The apartment ID.</param>
-        /// <param name="userId">The user ID.</param>
-        /// <param name="content">The content of the review.</param>
-        /// <param name="rating">The rating given in the review.</param>
-        public Review(int id, int apartmentId, int userId, string content, int rating)
+        public Review(int userId, int apartmentId, string comment, int rating)
         {
-            Id = id;
-            ApartmentId = apartmentId;
+            if (userId <= 0) throw new ArgumentOutOfRangeException(nameof(userId), "User ID must be positive.");
+            if (apartmentId <= 0) throw new ArgumentOutOfRangeException(nameof(apartmentId), "Apartment ID must be positive.");
+            if (rating < 1 || rating > 5) throw new ArgumentOutOfRangeException(nameof(rating), "Rating must be between 1 and 5.");
+
             UserId = userId;
-            Content = content ?? throw new ArgumentNullException(nameof(content));
+            ApartmentId = apartmentId;
+            Comment = comment ?? throw new ArgumentNullException(nameof(comment));
             Rating = rating;
-        }
-
-        /// <summary>
-        /// Displays the details of the review.
-        /// </summary>
-        public void DisplayReview()
-        {
-            Console.WriteLine($"Review ID: {Id}");
-            Console.WriteLine($"Apartment ID: {ApartmentId}");
-            Console.WriteLine($"User ID: {UserId}");
-            Console.WriteLine($"Content: {Content}");
-            Console.WriteLine($"Rating: {Rating}");
+            ReviewDate = DateTime.Now;
         }
     }
 }

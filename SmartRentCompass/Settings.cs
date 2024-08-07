@@ -1,43 +1,14 @@
-﻿using System;
-using Microsoft.Extensions.Configuration;
-
-namespace SmartRentCompass
+﻿namespace SmartRentCompass
 {
-    /// <summary>
-    /// Provides application settings.
-    /// </summary>
-    public static class Settings
+    public class Settings
     {
-        /// <summary>
-        /// Gets the database connection string.
-        /// </summary>
-        public static string ConnectionString { get; private set; }
+        public string DatabaseConnectionString { get; set; }
 
-        static Settings()
+        private const string ConnectionStringNullError = "Database connection string cannot be null.";
+
+        public Settings(string databaseConnectionString)
         {
-            try
-            {
-                ConnectionString = GetConnectionString();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching the connection string: {ex.Message}");
-                ConnectionString = string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Fetches the connection string from the configuration file.
-        /// </summary>
-        /// <returns>The connection string.</returns>
-        private static string GetConnectionString()
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
-            var configuration = builder.Build();
-            return configuration.GetConnectionString("DefaultConnection");
+            DatabaseConnectionString = databaseConnectionString ?? throw new System.ArgumentNullException(nameof(databaseConnectionString), ConnectionStringNullError);
         }
     }
 }

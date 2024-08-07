@@ -1,35 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using SmartRentCompass;
+using SmartRentCompass.Models;
+using SmartRentCompass.Repositories;
 
-public class ApartmentSearch
+namespace SmartRentCompass.Services
 {
-    private List<Apartment> apartments;
-
-    public ApartmentSearch()
+    public class ApartmentSearch
     {
-        apartments = new List<Apartment>();
-    }
+        private readonly IApartmentRepository _apartmentRepository;
 
-    public void AddApartment(Apartment apartment)
-    {
-        apartments.Add(apartment);
-    }
-
-    public void SearchByPrice(int maxPrice)
-    {
-        var results = apartments.Where(a => a.Price <= maxPrice).ToList();
-        if (results.Any())
+        public ApartmentSearch(IApartmentRepository apartmentRepository)
         {
-            foreach (var apartment in results)
-            {
-                apartment.DisplayApartmentInfo();
-            }
+            _apartmentRepository = apartmentRepository ?? throw new ArgumentNullException(nameof(apartmentRepository));
         }
-        else
+
+        public IEnumerable<Apartment> Search(string query)
         {
-            Console.WriteLine("No apartments found within the specified price range.");
+            return _apartmentRepository.SearchApartments(query);
         }
     }
 }

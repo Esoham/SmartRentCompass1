@@ -1,44 +1,40 @@
-﻿namespace SmartRentCompass
+﻿namespace SmartRentCompass.Models
 {
     public class Apartment
     {
-        public int ApartmentId { get; set; }
-        public string Name { get; set; }
+        public int Id { get; set; }
         public string Address { get; set; }
-        public string City { get; set; }
-        public string State { get; set; }
-        public int ZipCode { get; set; }
-        public string Source { get; set; }
-        public bool PetsAllowed { get; set; }
-        public decimal Price { get; set; }
-        public int Size { get; set; }
+        public decimal Rent { get; set; }
         public int Bedrooms { get; set; }
         public int Bathrooms { get; set; }
-        public bool IsAvailable { get; set; } // Added IsAvailable property
-        public string Description { get; set; } // Added Description property
-        public string Location => $"{City}, {State}";
+        public bool IsAvailable { get; set; }
+        public DateTime AvailableFrom { get; set; }
+        public string Description { get; set; }
 
-        public Apartment(int apartmentId, string name, string address, string city, string state, int zipCode, string source, bool petsAllowed, decimal price, int size, int bedrooms, int bathrooms, bool isAvailable, string description)
+        // Constructor with validation
+        public Apartment(string address, decimal rent, int bedrooms, int bathrooms, bool isAvailable, DateTime availableFrom, string description)
         {
-            ApartmentId = apartmentId;
-            Name = name;
+            if (string.IsNullOrWhiteSpace(address)) throw new ArgumentException("Address cannot be null or empty.", nameof(address));
+            if (rent < 0) throw new ArgumentOutOfRangeException(nameof(rent), "Rent must be a non-negative value.");
+            if (bedrooms < 0) throw new ArgumentOutOfRangeException(nameof(bedrooms), "Bedrooms must be a non-negative value.");
+            if (bathrooms < 0) throw new ArgumentOutOfRangeException(nameof(bathrooms), "Bathrooms must be a non-negative value.");
+            if (string.IsNullOrWhiteSpace(description)) throw new ArgumentException("Description cannot be null or empty.", nameof(description));
+
             Address = address;
-            City = city;
-            State = state;
-            ZipCode = zipCode;
-            Source = source;
-            PetsAllowed = petsAllowed;
-            Price = price;
-            Size = size;
+            Rent = rent;
             Bedrooms = bedrooms;
             Bathrooms = bathrooms;
             IsAvailable = isAvailable;
+            AvailableFrom = availableFrom;
             Description = description;
         }
 
-        public void DisplayApartmentInfo()
+        // Parameterless constructor for Entity Framework
+        public Apartment() { }
+
+        public override string ToString()
         {
-            Console.WriteLine($"Apartment: {Name}, Price: {Price}, Location: {Location}, Bedrooms: {Bedrooms}, Bathrooms: {Bathrooms}, Available: {IsAvailable}, Description: {Description}");
+            return $"{Address} - {Rent:C} - {Bedrooms} Bed(s), {Bathrooms} Bath(s) - Available from {AvailableFrom:MM/dd/yyyy}";
         }
     }
 }

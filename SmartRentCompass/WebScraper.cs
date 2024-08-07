@@ -1,37 +1,56 @@
 ﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using HtmlAgilityPack;
+using SmartRentCompass.Models; // Add this directive to reference the Apartment class
 
 namespace SmartRentCompass
 {
-    /// <summary>
-    /// Provides methods for web scraping.
-    /// </summary>
-    public static class WebScraper
+    public class WebScraper
     {
-        /// <summary>
-        /// Fetches the content of a web page from the specified URL.
-        /// </summary>
-        /// <param name="url">The URL of the web page to fetch.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains the content of the web page.</returns>
-        public static async Task<string> FetchPageContent(string url)
-        {
-            if (string.IsNullOrEmpty(url)) throw new ArgumentNullException(nameof(url));
+        private const string UrlCannotBeNullOrEmpty = "URL cannot be null or empty.";
 
-            using (HttpClient client = new HttpClient())
+        public List<Apartment> ScrapeApartments(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) throw new ArgumentException(UrlCannotBeNullOrEmpty, nameof(url));
+
+            var web = new HtmlWeb();
+            var doc = web.Load(url);
+            var apartments = new List<Apartment>();
+
+            var nodes = doc.DocumentNode.SelectNodes("//div[@class='apartment']");
+            if (nodes == null) return apartments; // Return empty list if no apartments found
+
+            foreach (var node in nodes)
             {
-                try
+                var address = GetNodeText(node, ".//span[@class='address']");
+                var priceText = GetNodeText(node, ".//span[@class='price']").Replace("$", "").Replace(",", "").Trim();
+                if (!decimal.TryParse(priceText, out var price))
                 {
-                    HttpResponseMessage response = await client.GetAsync(url);
-                    response.EnsureSuccessStatusCode();
-                    return await response.Content.ReadAsStringAsync();
+                    continue; // Skip if the price cannot be parsed
                 }
-                catch (Exception ex)
+                var bedroomsText = GetNodeText(node, ".//span[@class='bedrooms']").Trim();
+                if (!int.TryParse(bedroomsText, out var bedrooms))
                 {
-                    Console.WriteLine($"An error occurred while fetching the content from {url}: {ex.Message}");
-                    return string.Empty;
+                    continue; // Skip if the number of bedrooms cannot be parsed
                 }
+                var bathroomsText = GetNodeText(node, ".//span[@class='bathrooms']").Trim();
+                if (!int.TryParse(bathroomsText, out var bathrooms))
+                {
+                    continue; // Skip if the number of bathrooms cannot be parsed
+                }
+                var description = GetNodeText(node, ".//span[@class='description']");
+
+                var apartment = new Apartment(address, price, bedrooms, bathrooms, true, DateTime.Now, description);
+                apartments.Add(apartment);
             }
+
+            return apartments;
+        }
+
+        private static string GetNodeText(HtmlNode node, string xpath)
+        {
+            var selectedNode = node.SelectSingleNode(xpath);
+            return selectedNode?.InnerText?.Trim() ?? string.Empty;
         }
     }
 }

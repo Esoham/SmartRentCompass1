@@ -2,39 +2,28 @@
 
 namespace SmartRentCompass
 {
-    /// <summary>
-    /// Represents a user.
-    /// </summary>
     public class User
     {
         public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
         public string Email { get; set; }
+        public DateTime CreatedDate { get; set; }
 
-        /// <summary>
-        /// Initializes a new instance of the User class.
-        /// </summary>
-        /// <param name="id">The user ID.</param>
-        /// <param name="firstName">The first name of the user.</param>
-        /// <param name="lastName">The last name of the user.</param>
-        /// <param name="email">The email of the user.</param>
-        public User(int id, string firstName, string lastName, string email)
-        {
-            Id = id;
-            FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
-            LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
-            Email = email ?? throw new ArgumentNullException(nameof(email));
-        }
+        private const string UsernameNullOrEmptyError = "Username cannot be null or empty.";
+        private const string PasswordNullOrEmptyError = "Password cannot be null or empty.";
+        private const string EmailNullOrEmptyError = "Email cannot be null or empty.";
 
-        /// <summary>
-        /// Displays the user's information.
-        /// </summary>
-        public void DisplayUserInfo()
+        public User(string username, string password, string email)
         {
-            Console.WriteLine($"User ID: {Id}");
-            Console.WriteLine($"Name: {FirstName} {LastName}");
-            Console.WriteLine($"Email: {Email}");
+            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException(UsernameNullOrEmptyError, nameof(username));
+            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException(PasswordNullOrEmptyError, nameof(password));
+            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(EmailNullOrEmptyError, nameof(email));
+
+            Username = username;
+            Password = password;
+            Email = email;
+            CreatedDate = DateTime.Now;
         }
     }
 }

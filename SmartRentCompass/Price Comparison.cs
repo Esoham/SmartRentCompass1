@@ -1,76 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using MySql.Data.MySqlClient;
+using SmartRentCompass.Models; // Add this directive to reference the Apartment class
 
 namespace SmartRentCompass
 {
-    public static class PriceComparison
+    public class PriceComparison
     {
-        private static readonly string ConnectionString = "Server=localhost;Database=smartrentcompass;User ID=root;Password=Bourgeoi32#;";
+        private const string ApartmentsListCannotBeNullOrEmpty = "The apartments list cannot be null or empty.";
 
-        public static void ComparePrices()
+        public List<Apartment> ComparePrices(List<Apartment> apartments)
         {
-            List<Apartment> apartments = new List<Apartment>();
+            ValidateApartmentsList(apartments);
 
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "SELECT * FROM Apartments";
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        using (var reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                apartments.Add(new Apartment(
-                                    reader.GetInt32("ApartmentId"),
-                                    reader.GetString("Name"),
-                                    reader.GetString("Address"),
-                                    reader.GetString("City"),
-                                    reader.GetString("State"),
-                                    reader.GetInt32("ZipCode"),
-                                    reader.GetString("Source"),
-                                    reader.GetBoolean("PetsAllowed"),
-                                    reader.GetDecimal("Price"),
-                                    reader.GetInt32("Size"),
-                                    reader.GetInt32("Bedrooms"),
-                                    reader.GetInt32("Bathrooms"),
-                                    reader.GetBoolean("IsAvailable"),
-                                    reader.GetString("Description")
-                                ));
-                            }
-                        }
-                    }
-
-                    DisplayBestDeals(apartments);
-                }
-                catch (MySqlException ex)
-                {
-                    Console.WriteLine($"MySQL Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General Error: {ex.Message}");
-                    // Additional logging or actions
-                }
-            }
+            return apartments.OrderBy(a => a.Rent).ToList();
         }
 
-        private static void DisplayBestDeals(List<Apartment> apartments)
+        public Apartment GetCheapestApartment(List<Apartment> apartments)
         {
-            var groupedByLocation = apartments.GroupBy(a => a.Location);
+            ValidateApartmentsList(apartments);
 
-            foreach (var group in groupedByLocation)
+            return apartments.OrderBy(a => a.Rent).FirstOrDefault();
+        }
+
+        private static void ValidateApartmentsList(List<Apartment> apartments)
+        {
+            if (apartments == null || !apartments.Any())
             {
-                Console.WriteLine($"Best deals in {group.Key}:");
-                foreach (var apartment in group.OrderBy(a => a.Price).Take(3))
-                {
-                    Console.WriteLine($"- {apartment.Name}: ${apartment.Price} per month from {apartment.Source}");
-                }
+                throw new ArgumentException(ApartmentsListCannotBeNullOrEmpty, nameof(apartments));
             }
         }
     }

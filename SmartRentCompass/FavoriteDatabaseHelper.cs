@@ -1,133 +1,87 @@
 ﻿using System;
 using System.Collections.Generic;
-using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient; // Ensure the correct MySQL library is used
 
 namespace SmartRentCompass
 {
-    /// <summary>
-    /// Provides methods to interact with the FavoriteApartments database.
-    /// </summary>
     public class FavoriteDatabaseHelper
     {
-        private readonly string connectionString;
+        private readonly string _connectionString;
 
-        /// <summary>
-        /// Initializes a new instance of the FavoriteDatabaseHelper class.
-        /// </summary>
-        /// <param name="connectionString">The database connection string.</param>
-        /// <exception cref="ArgumentNullException">Thrown when the connection string is null or empty.</exception>
+        private const string SELECT_FAVORITES_BY_USERID_QUERY = "SELECT * FROM Favorites WHERE UserId = @UserId";
+        private const string INSERT_FAVORITE_QUERY = "INSERT INTO Favorites (UserId, ApartmentId, AddedDate) VALUES (@UserId, @ApartmentId, @AddedDate)";
+
+        private const string USERID_PARAM = "@UserId";
+        private const string APARTMENTID_PARAM = "@ApartmentId";
+        private const string ADDEDDATE_PARAM = "@AddedDate";
+
         public FavoriteDatabaseHelper(string connectionString)
         {
-            this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        /// <summary>
-        /// Retrieves the favorite apartments for a specific user.
-        /// </summary>
-        /// <param name="userId">The user ID.</param>
-        /// <returns>A list of favorite apartments.</returns>
-        public List<Apartment> GetFavoriteApartments(int userId)
+        public List<Favorite> GetFavoritesByUserId(int userId)
         {
-            var favoriteApartments = new List<Apartment>();
+            if (userId <= 0) throw new ArgumentOutOfRangeException(nameof(userId), "User ID must be positive.");
 
-            try
+            var favorites = new List<Favorite>();
+
+            using (var connection = new MySqlConnection(_connectionString))
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "SELECT a.* FROM FavoriteApartments fa JOIN Apartments a ON fa.ApartmentId = a.ApartmentId WHERE fa.UserId = @UserId";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@UserId", userId);
+                connection.Open();
 
-                        using (MySqlDataReader reader = command.ExecuteReader())
+                using (var command = new MySqlCommand(SELECT_FAVORITES_BY_USERID_QUERY, connection))
+                {
+                    command.Parameters.AddWithValue(USERID_PARAM, userId);
+
+                    using (MySql.Data.MySqlClient.MySqlDataReader reader = command.ExecuteReader()) // Explicit namespace
+                    {
+                        while (reader.Read())
                         {
-                            while (reader.Read())
-                            {
-                                var apartment = new Apartment(
-                                    reader.GetInt32("ApartmentId"),
-                                    reader.GetString("Name"),
-                                    reader.GetString("Address"),
-                                    reader.GetString("City"),
-                                    reader.GetString("State"),
-                                    reader.GetInt32("ZipCode"),
-                                    reader.GetString("Source"),
-                                    reader.GetBoolean("PetsAllowed"),
-                                    reader.GetDecimal("Price"),
-                                    reader.GetInt32("Size"),
-                                    reader.GetInt32("Bedrooms"),
-                                    reader.GetInt32("Bathrooms"),
-                                    reader.GetBoolean("IsAvailable"),
-                                    reader.GetString("Description")
-                                );
-                                favoriteApartments.Add(apartment);
-                            }
+                            favorites.Add(MapFavorite(reader));
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching favorite apartments for user ID {userId}: {ex.Message}");
-            }
 
-            return favoriteApartments;
+            return favorites;
         }
 
-        /// <summary>
-        /// Adds an apartment to the user's favorites.
-        /// </summary>
-        /// <param name="userId">The user ID.</param>
-        /// <param name="apartmentId">The apartment ID.</param>
-        public void AddFavoriteApartment(int userId, int apartmentId)
+        public void AddFavorite(Favorite favorite)
         {
-            try
-            {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "INSERT INTO FavoriteApartments (UserId, ApartmentId) VALUES (@UserId, @ApartmentId)";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@UserId", userId);
-                        command.Parameters.AddWithValue("@ApartmentId", apartmentId);
+            if (favorite == null) throw new ArgumentNullException(nameof(favorite));
 
-                        command.ExecuteNonQuery();
-                    }
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var command = new MySqlCommand(INSERT_FAVORITE_QUERY, connection))
+                {
+                    AddFavoriteParameters(command, favorite);
+                    command.ExecuteNonQuery();
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while adding favorite apartment with ID {apartmentId} for user ID {userId}: {ex.Message}");
-            }
         }
 
-        /// <summary>
-        /// Removes an apartment from the user's favorites.
-        /// </summary>
-        /// <param name="userId">The user ID.</param>
-        /// <param name="apartmentId">The apartment ID.</param>
-        public void RemoveFavoriteApartment(int userId, int apartmentId)
+        private static Favorite MapFavorite(MySql.Data.MySqlClient.MySqlDataReader reader) // Explicit namespace
         {
-            try
+            return new Favorite(
+                Convert.ToInt32(reader["UserId"]),
+                Convert.ToInt32(reader["ApartmentId"])
+            )
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "DELETE FROM FavoriteApartments WHERE UserId = @UserId AND ApartmentId = @ApartmentId";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@UserId", userId);
-                        command.Parameters.AddWithValue("@ApartmentId", apartmentId);
-
-                        command.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while removing favorite apartment with ID {apartmentId} for user ID {userId}: {ex.Message}");
-            }
+                Id = Convert.ToInt32(reader["Id"]),
+                AddedDate = Convert.ToDateTime(reader["AddedDate"])
+            };
         }
+
+        private static void AddFavoriteParameters(MySqlCommand command, Favorite favorite)
+        {
+            command.Parameters.AddWithValue(USERID_PARAM, favorite.UserId);
+            command.Parameters.AddWithValue(APARTMENTID_PARAM, favorite.ApartmentId);
+            command.Parameters.AddWithValue(ADDEDDATE_PARAM, favorite.AddedDate);
+        }
+
+        // Additional methods for updating and deleting favorites can be added here
     }
 }
