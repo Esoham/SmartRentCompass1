@@ -11,6 +11,12 @@
         public DateTime AvailableFrom { get; set; }
         public string Description { get; set; }
 
+        // Adding the missing properties
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+        public double Size { get; set; }
+        public string Amenities { get; set; }
+
         // Constructor with validation
         public Apartment(string address, decimal rent, int bedrooms, int bathrooms, bool isAvailable, DateTime availableFrom, string description)
         {

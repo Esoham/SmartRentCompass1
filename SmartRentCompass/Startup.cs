@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using SmartRentCompass.Repositories;
+using SmartRentCompass.Helpers;
 
 namespace SmartRentCompass
 {
@@ -19,7 +21,10 @@ namespace SmartRentCompass
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<SmartRentCompassContext>(options =>
-                options.UseMySQL(Configuration.GetConnectionString("DefaultConnection")));
+                options.UseMySql(Configuration.GetConnectionString("DefaultConnection"), ServerVersion.AutoDetect(Configuration.GetConnectionString("DefaultConnection"))));
+
+            services.AddScoped<IApartmentRepository, ApartmentRepository>();
+            services.AddScoped<ApartmentDatabaseHelper>();
 
             services.AddControllersWithViews();
         }
