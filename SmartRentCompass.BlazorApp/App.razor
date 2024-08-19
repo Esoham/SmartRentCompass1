@@ -4,10 +4,34 @@
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <PageTitle>Not found</PageTitle>
+        <PageTitle>Page Not Found</PageTitle>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <div class="not-found-container">
+                <h1>404 - Page Not Found</h1>
+                <p role="alert">Sorry, we couldn't find the page you're looking for.</p>
+                <a href="/">Go back to the homepage</a>
+            </div>
         </LayoutView>
     </NotFound>
 </Router>
 
+<style>
+    .not-found-container {
+        text-align: center;
+        padding: 50px;
+    }
+
+        .not-found-container h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .not-found-container p {
+            margin-bottom: 20px;
+        }
+
+        .not-found-container a {
+            color: #007bff;
+            text-decoration: underline;
+        }
+</style>

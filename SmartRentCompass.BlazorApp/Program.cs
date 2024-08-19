@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using SmartRentCompass.Data; // Replace this with the correct namespace where ApartmentService is located
-// Ensure the ApartmentService.cs file has this namespace at the top
+using SmartRentCompass.Services; // Ensure this matches the namespace in ApartmentService.cs
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +9,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 // Register your services
-builder.Services.AddScoped<ApartmentService>(); // Correct service registration
+builder.Services.AddScoped<ApartmentService>(); // Register the correct ApartmentService
 
 var app = builder.Build();
 
@@ -25,6 +24,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseAuthorization(); // Add this line if you have authentication/authorization in your application
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

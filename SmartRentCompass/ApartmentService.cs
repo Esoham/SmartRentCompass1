@@ -1,59 +1,43 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using SmartRentCompass.Models;
 
-namespace SmartRentCompass.Data
+namespace SmartRentCompass.Services
 {
     public class ApartmentService
     {
-        private readonly List<Apartment> _apartments;
-        private readonly List<User> _users;
+        private readonly ApplicationDbContext _context;
 
-        public ApartmentService()
+        public ApartmentService(ApplicationDbContext context)
         {
-            _apartments = TestData.GetTestApartments();
-            _users = TestData.GetTestUsers();
+            _context = context;
         }
 
-        public List<Apartment> GetAllApartments() => _apartments;
-
-        public Apartment GetApartmentById(int id) => _apartments.FirstOrDefault(a => a.Id == id);
-
-        public void AddReview(int apartmentId, int userId, string content, int rating)
+        // Method to retrieve all apartments asynchronously
+        public async Task<List<Apartment>> GetAllApartmentsAsync()
         {
-            var apartment = _apartments.FirstOrDefault(a => a.Id == apartmentId);
-            if (apartment != null)
-            {
-                var review = new Review
-                {
-                    Id = apartment.Reviews.Count + 1,
-                    ApartmentId = apartmentId,
-                    UserId = userId,
-                    Content = content,
-                    Rating = rating
-                };
-                apartment.Reviews.Add(review);
-            }
+            return await _context.Apartments.ToListAsync();
         }
 
-        public void AddFavorite(int userId, int apartmentId)
+        // Method to retrieve available apartments only asynchronously
+        public async Task<List<Apartment>> GetAvailableApartmentsAsync()
         {
-            var user = _users.FirstOrDefault(u => u.Id == userId);
-            if (user != null)
-            {
-                var favorite = new Favorite
-                {
-                    Id = user.Favorites.Count + 1,
-                    UserId = userId,
-                    ApartmentId = apartmentId
-                };
-                user.Favorites.Add(favorite);
-            }
+            return await _context.Apartments.Where(a => a.Available).ToListAsync();
         }
 
-        public List<Favorite> GetFavoritesByUserId(int userId)
+        // Method to add a new apartment asynchronously
+        public async Task AddApartmentAsync(Apartment apartment)
         {
-            var user = _users.FirstOrDefault(u => u.Id == userId);
-            return user?.Favorites ?? new List<Favorite>();
+            _context.Apartments.Add(apartment);
+            await _context.SaveChangesAsync();
+        }
+
+        // Method to find an apartment by ID asynchronously
+        public async Task<Apartment> GetApartmentByIdAsync(int id)
+        {
+            return await _context.Apartments.FindAsync(id);
         }
     }
 }

@@ -1,4 +1,57 @@
 ﻿@inherits LayoutComponentBase
 
-<main> @Body </main>
+<header>
+    <h1>SmartRentCompass</h1>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/apartments">Apartments</a>
+        <a href="/favorites">Favorites</a>
+    </nav>
+</header>
 
+<main>
+    @Body
+</main>
+
+<footer>
+    <p>&copy; 2024 SmartRentCompass</p>
+</footer>
+
+<style>
+    header {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+    nav {
+        margin-top: 10px;
+    }
+
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+            nav a:hover {
+                text-decoration: underline;
+            }
+
+    main {
+        padding: 20px;
+    }
+
+    footer {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-top: 1px solid #e5e5e5;
+        text-align: center;
+        margin-top: 20px;
+    }
+</style>
